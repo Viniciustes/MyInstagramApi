@@ -1,16 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using MyInstagramApi.Contexts;
+using MyInstagramApi.Interfaces;
+using MyInstagramApi.Repositories;
+using System.IO;
 
 namespace MyInstagramApi
 {
@@ -26,6 +23,10 @@ namespace MyInstagramApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddScoped<MyInstagramContextDb>();
+
+            services.AddScoped<IPostRepository, PostRepository>();
+
             services.AddMvc()
                 .AddNewtonsoftJson();
         }
@@ -43,12 +44,24 @@ namespace MyInstagramApi
                 app.UseHsts();
             }
 
+            var folderName = Path.Combine("Uploads", "Images");
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+                    Path.Combine(Directory.GetCurrentDirectory(), folderName)),
+                RequestPath = "/Uploads"
+            });
+
+            app.UseWebSockets();
+
             app.UseHttpsRedirection();
 
             app.UseRouting(routes =>
             {
                 routes.MapControllers();
             });
+
+            app.UseCors(option => option.AllowAnyOrigin());
 
             app.UseAuthorization();
         }
